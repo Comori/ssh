@@ -21,6 +21,7 @@ export class MainRunner {
     this.privateKey = core.getInput('privateKey')
     if (this.isNull(this.password) && this.isNull(this.privateKey)) {
       core.error(`❌ password and privateKey cannot both empty!!!`)
+      core.setFailed('😭 ssh params error!')
     }
     this.command = core.getMultilineInput('command')
     this.sourceFiles = core.getMultilineInput('sourceFiles')
@@ -29,6 +30,7 @@ export class MainRunner {
     if (this.scpFirst) {
       if (this.isArrayEmpty(this.sourceFiles) || this.isNull(this.targetDir)) {
         core.error(`❌ if scpFirst, sourceFiles or targetDir cannot empty!!!`)
+        core.setFailed('😭 ssh params error!')
       }
     }
   }
@@ -59,6 +61,7 @@ export class MainRunner {
       core.debug(`✅ all task exec successfully!`)
     } catch (error) {
       core.error(`❌ Error : ${error}`)
+      core.setFailed('😭 ssh run failed!')
     }
   }
 
@@ -72,6 +75,7 @@ export class MainRunner {
       core.debug(`👉 exec result stderr: ${result.stderr}`)
       if (result.code !== 0) {
         core.error(`❌ exec command error : ${result.stderr}`)
+        core.setFailed('😭 ssh exec cmd failed!')
       }
     } else {
       core.debug(`👉 raw command is empty!`)
