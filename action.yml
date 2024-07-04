@@ -1,4 +1,4 @@
-name: 'ssh'
+name: 'ssh-action'
 description: 'ssh commond & scp files'
 author: 'kevin'
 
