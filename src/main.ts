@@ -59,13 +59,14 @@ export class MainRunner {
         await this.scpFun(ssh)
       }
       core.debug(`✅ all task exec successfully!`)
+      ssh.connection?.destroy()
     } catch (error) {
       core.error(`❌ Error : ${error}`)
       core.setFailed('😭 ssh run failed!')
     }
   }
 
-  private async cmdFun(ssh: NodeSSH): Promise<void> {
+  private async cmdFun(ssh: NodeSSH): Promise<boolean> {
     if (!this.isArrayEmpty(this.command)) {
       core.debug(`👉 exec raw command ${this.command}`)
       const cmdStr = this.command!.join(' && ')
@@ -76,13 +77,15 @@ export class MainRunner {
       if (result.code !== 0) {
         core.error(`❌ exec command error : ${result.stderr}`)
         core.setFailed('😭 ssh exec cmd failed!')
+        return false
       }
     } else {
       core.debug(`👉 raw command is empty!`)
     }
+    return true
   }
 
-  private async scpFun(ssh: NodeSSH): Promise<void> {
+  private async scpFun(ssh: NodeSSH): Promise<boolean> {
     core.debug(`👉 first to scp file`)
     const rootGlobber = await glob.create('./')
     const rootDir = rootGlobber.getSearchPaths()
@@ -116,6 +119,7 @@ export class MainRunner {
     if (!this.isArrayEmpty(putFiles)) {
       await ssh.putFiles(putFiles)
     }
+    return true
   }
 
   private isNull(str?: string): boolean {

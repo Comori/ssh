@@ -52848,6 +52848,7 @@ class MainRunner {
                 await this.scpFun(ssh);
             }
             core.debug(`✅ all task exec successfully!`);
+            ssh.connection?.destroy();
         }
         catch (error) {
             core.error(`❌ Error : ${error}`);
@@ -52865,11 +52866,13 @@ class MainRunner {
             if (result.code !== 0) {
                 core.error(`❌ exec command error : ${result.stderr}`);
                 core.setFailed('😭 ssh exec cmd failed!');
+                return false;
             }
         }
         else {
             core.debug(`👉 raw command is empty!`);
         }
+        return true;
     }
     async scpFun(ssh) {
         core.debug(`👉 first to scp file`);
@@ -52905,6 +52908,7 @@ class MainRunner {
         if (!this.isArrayEmpty(putFiles)) {
             await ssh.putFiles(putFiles);
         }
+        return true;
     }
     isNull(str) {
         return str == null || str.length <= 0;
