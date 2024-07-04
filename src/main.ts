@@ -100,7 +100,9 @@ export class MainRunner {
       if (isDirectory(filePath)) {
         putDirs.push(filePath)
       } else {
-        const exitsInDir = putDirs.every(dir => filePath.includes(dir))
+        const exitsInDir =
+          !this.isArrayEmpty(putDirs) &&
+          putDirs.every(dir => filePath.includes(dir))
         core.debug(`👉 file is exitsInDir: ${exitsInDir}`)
         if (!exitsInDir) {
           putFiles.push({
