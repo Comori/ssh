@@ -1,26 +1,133 @@
 import * as core from '@actions/core'
-import { wait } from './wait'
+import { NodeSSH } from 'node-ssh'
+import * as glob from '@actions/glob'
+import * as fs from 'fs'
 
-/**
- * The main function for the action.
- * @returns {Promise<void>} Resolves when the action is complete.
- */
-export async function run(): Promise<void> {
+export class MainRunner {
+  host: string
+  port?: number
+  username: string
+  password?: string
+  privateKey?: string
+  command?: string[]
+  sourceFiles?: string[]
+  targetDir?: string
+  scpFirst: boolean
+
+  constructor() {
+    this.host = core.getInput('host')
+    this.username = core.getInput('username')
+    this.password = core.getInput('password')
+    this.privateKey = core.getInput('privateKey')
+    if (this.isNull(this.password) && this.isNull(this.privateKey)) {
+      core.error(`❌ password and privateKey cannot both empty!!!`)
+    }
+    this.command = core.getMultilineInput('command')
+    this.sourceFiles = core.getMultilineInput('sourceFiles')
+    this.targetDir = core.getInput('targetDir')
+    this.scpFirst = core.getBooleanInput('scpFirst')
+    if (this.scpFirst) {
+      if (this.isArrayEmpty(this.sourceFiles) || this.isNull(this.targetDir)) {
+        core.error(`❌ if scpFirst, sourceFiles or targetDir cannot empty!!!`)
+      }
+    }
+  }
+
+  async run(): Promise<void> {
+    try {
+      const ssh = new NodeSSH()
+      const sshConfig: {
+        host: string
+        username: string
+        password?: string
+        privateKey?: string
+      } = { host: this.host, username: this.username }
+      if (!this.isNull(this.password)) {
+        sshConfig.password = this.password
+      } else if (!this.isNull(this.privateKey)) {
+        sshConfig.privateKey = this.privateKey
+      }
+      await ssh.connect(sshConfig)
+      core.debug(`✅ ssh connect ${this.host} successfully!`)
+      if (this.scpFirst) {
+        await this.scpFun(ssh)
+        await this.cmdFun(ssh)
+      } else {
+        await this.cmdFun(ssh)
+        await this.scpFun(ssh)
+      }
+      core.debug(`✅ all task exec successfully!`)
+    } catch (error) {
+      core.error(`❌ Error : ${error}`)
+    }
+  }
+
+  private async cmdFun(ssh: NodeSSH): Promise<void> {
+    if (!this.isArrayEmpty(this.command)) {
+      core.debug(`👉 exec raw command ${this.command}`)
+      const cmdStr = this.command!.join(' && ')
+      core.info(`👉 exec command ${cmdStr}`)
+      const result = await ssh.execCommand(cmdStr)
+      core.debug(`👉 exec result stdout: ${result.stdout}`)
+      core.debug(`👉 exec result stderr: ${result.stderr}`)
+    } else {
+      core.debug(`👉 raw command is empty!`)
+    }
+  }
+
+  private async scpFun(ssh: NodeSSH): Promise<void> {
+    core.debug(`👉 first to scp file`)
+    const rootGlobber = await glob.create('./')
+    const rootDir = rootGlobber.getSearchPaths()
+    core.info(`👉 rootDir === ${rootDir}`)
+    const globber = await glob.create(this.sourceFiles!.join('\n'))
+    const filePathList = await globber.glob()
+    core.info(`📋 files to upload:\n${filePathList.join('\n')}`)
+    const putFiles: { local: string; remote: string }[] = []
+    const putDirs: string[] = []
+    for (const filePath of filePathList) {
+      if (isDirectory(filePath)) {
+        putDirs.push(filePath)
+      } else {
+        const exitsInDir = putDirs.every(dir => filePath.includes(dir))
+        if (!exitsInDir) {
+          putFiles.push({
+            local: filePath,
+            remote: this.targetDir!
+          })
+        }
+      }
+    }
+    core.debug(`👉 putFiles list : ${putFiles}`)
+    core.debug(`👉 putDirs list : ${putDirs}`)
+
+    if (!this.isArrayEmpty(putDirs)) {
+      for (const dir of putDirs) {
+        await ssh.putDirectory(dir, this.targetDir!, { recursive: true })
+      }
+    }
+    if (!this.isArrayEmpty(putFiles)) {
+      await ssh.putFiles(putFiles)
+    }
+  }
+
+  private isNull(str?: string): boolean {
+    return str == null || str.length <= 0
+  }
+
+  private isArrayEmpty(
+    ary?: string[] | { local: string; remote: string }[]
+  ): boolean {
+    return ary == null || ary.length <= 0
+  }
+}
+
+function isDirectory(filePath: string): boolean {
   try {
-    const ms: string = core.getInput('milliseconds')
-
-    // Debug logs are only output if the `ACTIONS_STEP_DEBUG` secret is true
-    core.debug(`Waiting ${ms} milliseconds ...`)
-
-    // Log the current timestamp, wait, then log the new timestamp
-    core.debug(new Date().toTimeString())
-    await wait(parseInt(ms, 10))
-    core.debug(new Date().toTimeString())
-
-    // Set outputs for other workflow steps to use
-    core.setOutput('time', new Date().toTimeString())
-  } catch (error) {
-    // Fail the workflow run if an error occurs
-    if (error instanceof Error) core.setFailed(error.message)
+    const stat: fs.Stats = fs.statSync(filePath)
+    return stat.isDirectory()
+  } catch (e) {
+    // 如果路径不存在，则不是文件夹
+    return false
   }
 }

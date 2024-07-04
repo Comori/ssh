@@ -1,23 +1,40 @@
-name: 'The name of your action here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
+name: 'ssh'
+description: 'ssh commond & scp files'
+author: 'kevin'
 
 # Add your action's branding here. This will appear on the GitHub Marketplace.
 branding:
-  icon: 'heart'
-  color: 'red'
+  icon: 'server'
+  color: 'white'
 
 # Define your inputs here.
 inputs:
-  milliseconds:
-    description: 'Your input description here'
+  host:
+    description: 'Hostname or IP address of the server'
     required: true
-    default: '1000'
-
-# Define your outputs here.
-outputs:
-  time:
-    description: 'Your output description here'
+  port:
+    description: 'Port number of the server.'
+  username:
+    description: 'Username for authentication. eg: root'
+    required: true
+  password:
+    description: 'Password for password-based user authentication.'
+  privateKey:
+    description:
+      'private key for either key-based or hostbased user authentication
+      (OpenSSH format). '
+  command:
+    description:
+      'The shell command you want to execute. Multiple commands are separated by
+      newlines. '
+  sourceFiles:
+    description: 'Source files to be transferred'
+  targetDir:
+    description: 'Destination folder for file transfer'
+  scpFirst:
+    description: 'Whether to execute scp first. default false'
+    type: boolean
+    default: false
 
 runs:
   using: node20
