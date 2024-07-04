@@ -70,6 +70,9 @@ export class MainRunner {
       const result = await ssh.execCommand(cmdStr)
       core.debug(`👉 exec result stdout: ${result.stdout}`)
       core.debug(`👉 exec result stderr: ${result.stderr}`)
+      if (result.code !== 0) {
+        core.error(`❌ exec command error : ${result.stderr}`)
+      }
     } else {
       core.debug(`👉 raw command is empty!`)
     }
