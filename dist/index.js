@@ -52797,6 +52797,7 @@ const core = __importStar(__nccwpck_require__(2186));
 const node_ssh_1 = __nccwpck_require__(7334);
 const glob = __importStar(__nccwpck_require__(8090));
 const fs = __importStar(__nccwpck_require__(7147));
+const path_1 = __nccwpck_require__(1017);
 class MainRunner {
     host;
     port;
@@ -52854,6 +52855,7 @@ class MainRunner {
             core.error(`❌ Error : ${error}`);
             core.setFailed('😭 ssh run failed!');
         }
+        return true;
     }
     async cmdFun(ssh) {
         if (!this.isArrayEmpty(this.command)) {
@@ -52896,13 +52898,13 @@ class MainRunner {
                 if (!exitsInDir) {
                     putFiles.push({
                         local: filePath,
-                        remote: this.targetDir
+                        remote: (0, path_1.join)(this.targetDir, (0, path_1.basename)(filePath))
                     });
                 }
             }
         }
-        core.debug(`👉 putFiles list : ${putFiles}`);
-        core.debug(`👉 putDirs list : ${putDirs}`);
+        core.debug(`👉 putFiles list : ${putFiles.join('\n')}`);
+        core.debug(`👉 putDirs list : ${putDirs.join('\n')}`);
         if (!this.isArrayEmpty(putDirs)) {
             for (const dir of putDirs) {
                 await ssh.putDirectory(dir, this.targetDir, { recursive: true });

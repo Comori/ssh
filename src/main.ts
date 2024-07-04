@@ -2,6 +2,7 @@ import * as core from '@actions/core'
 import { NodeSSH } from 'node-ssh'
 import * as glob from '@actions/glob'
 import * as fs from 'fs'
+import { basename, join } from 'path'
 
 export class MainRunner {
   host: string
@@ -35,7 +36,7 @@ export class MainRunner {
     }
   }
 
-  async run(): Promise<void> {
+  async run(): Promise<boolean> {
     try {
       const ssh = new NodeSSH()
       const sshConfig: {
@@ -64,6 +65,7 @@ export class MainRunner {
       core.error(`❌ Error : ${error}`)
       core.setFailed('😭 ssh run failed!')
     }
+    return true
   }
 
   private async cmdFun(ssh: NodeSSH): Promise<boolean> {
@@ -107,13 +109,13 @@ export class MainRunner {
         if (!exitsInDir) {
           putFiles.push({
             local: filePath,
-            remote: this.targetDir!
+            remote: join(this.targetDir!, basename(filePath))
           })
         }
       }
     }
-    core.debug(`👉 putFiles list : ${putFiles}`)
-    core.debug(`👉 putDirs list : ${putDirs}`)
+    core.debug(`👉 putFiles list : ${putFiles.join('\n')}`)
+    core.debug(`👉 putDirs list : ${putDirs.join('\n')}`)
 
     if (!this.isArrayEmpty(putDirs)) {
       for (const dir of putDirs) {
