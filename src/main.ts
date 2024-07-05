@@ -44,7 +44,8 @@ export class MainRunner {
         username: string
         password?: string
         privateKey?: string
-      } = { host: this.host, username: this.username }
+        tryKeyboard: boolean
+      } = { host: this.host, username: this.username, tryKeyboard: true }
       if (!this.isNull(this.password)) {
         sshConfig.password = this.password
       } else if (!this.isNull(this.privateKey)) {

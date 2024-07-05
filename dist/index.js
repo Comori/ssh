@@ -52831,7 +52831,7 @@ class MainRunner {
     async run() {
         try {
             const ssh = new node_ssh_1.NodeSSH();
-            const sshConfig = { host: this.host, username: this.username };
+            const sshConfig = { host: this.host, username: this.username, tryKeyboard: true };
             if (!this.isNull(this.password)) {
                 sshConfig.password = this.password;
             }
